@@ -981,20 +981,57 @@
                 }
             },
 
+            checkTinyMCERestriction: function(field, data, ed) {
+                var numWords = 0;
+
+                // get the limit, limit_type etc. info from data array
+                var limit = (typeof(data[0]) !== "undefined" && data[0] !== null) ? parseInt(data[0]) : 0;
+                var fieldId = (typeof(data[1]) !== "undefined" && data[1] !== null) ? (data[1]).trim() : '';
+                var fieldType = (typeof(data[2]) !== "undefined" && data[2] !== null) ? (data[2]).trim() : '';
+                var limit_type = (typeof(data[3]) !== "undefined" && data[3] !== null) ? (data[3]).trim() : '';
+                var limit_to = (typeof(data[4]) !== "undefined" && data[4] !== null) ? (data[4]).trim() : '';
+                var limit_label = ( 'word' === limit_type ) ? 'Word Limit : ' : 'Character Limit : ';
+
+                if ( 'word' === limit_type ) {
+                    numWords = WP_User_Frontend.editorLimit.tinymce.getStats(ed).words;
+                } else {
+                    numWords = WP_User_Frontend.editorLimit.tinymce.getStats(ed).chars + 1;
+                }
+
+                var errorMessage = wpuf_frontend['word_'+limit_to ] + ' ' + limit;
+
+                if ( (numWords > 1) && (numWords > limit) && ('max' === limit_to) ) {
+                    WP_User_Frontend.markError( field, 'limit' );
+                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords +'/'+ limit );
+
+                    return true;
+                } else if ( (numWords < limit) && ('min' === limit_to) && numWords > 1 ) {
+                    WP_User_Frontend.markError( field, 'limit' );
+                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords +'/'+ limit );
+
+                    return true;
+                } else {
+                    if ($(field).hasClass('has-error')) {
+                        $(field).removeClass('has-error');
+                    }
+
+                    return false;
+                }
+            },
+
             checkRestrictionError: function(field) {
                 var fieldId = $(field).attr('id');
                 var isTinymce = false;
                 var ed = null;
                 var numWords = 0;
+                var data = '';
 
-                if ( tinyMCE.get(fieldId) !== null ) {
+                if ( typeof tinyMCE !== 'undefined' && tinyMCE.get(fieldId) !== null ) {
                     isTinymce = true;
                     ed = tinyMCE.get(fieldId);
 
                     ed.focus();
                 }
-
-                var data = '';
 
                 // For content restriction, we are passing the information below the fields inside a <script> tag
                 // For example: the field type, restriction type(word or character), min/max allowed etc.
@@ -1004,39 +1041,28 @@
                     data = fieldScript.match(/(?:bind\()(.*?(?=\)))/) ? fieldScript.match(/(?:bind\()(.*?(?=\)))/)[1].replace(/['"]/g, '').split(',') : '';
                 }
 
+                if ( isTinymce ) {
+                    return WP_User_Frontend.editorLimit.checkTinyMCERestriction(field, data, ed);
+                }
+
                 var limit = (typeof(data[0]) !== "undefined" && data[0] !== null) ? parseInt(data[0]) : 0;
                 var fieldId = (typeof(data[1]) !== "undefined" && data[1] !== null) ? (data[1]).trim() : '';
                 var fieldType = (typeof(data[2]) !== "undefined" && data[2] !== null) ? (data[2]).trim() : '';
                 var limit_type = (typeof(data[3]) !== "undefined" && data[3] !== null) ? (data[3]).trim() : '';
                 var limit_to = (typeof(data[4]) !== "undefined" && data[4] !== null) ? (data[4]).trim() : '';
-
                 var limit_label = ( 'word' === limit_type ) ? 'Word Limit : ' : 'Character Limit : ';
 
-                if ( ! isTinymce ) {
-                    numWords = $(field).val().length;
-                } else {
-                    if ( 'word' === limit_type ) {
-                        numWords = WP_User_Frontend.editorLimit.tinymce.getStats(ed).words;
-                    } else {
-                        numWords = WP_User_Frontend.editorLimit.tinymce.getStats(ed).chars + 1;
-                    }
-                }
+                numWords = $(field).val().length;
 
                 var errorMessage = wpuf_frontend['word_'+limit_to ] + ' ' + limit;
 
                 if ( (numWords > 1) && (numWords > limit) && ('max' === limit_to) ) {
                     WP_User_Frontend.markError( field, 'limit' );
 
-                    if (isTinymce) {
-                        jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords +'/'+ limit );
-                    }
                     return true;
                 } else if ( (numWords < limit) && ('min' === limit_to) && numWords > 1 ) {
                     WP_User_Frontend.markError( field, 'limit' );
 
-                    if (isTinymce) {
-                        jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords +'/'+ limit );
-                    }
                     return true;
                 } else {
                     if ($(field).hasClass('has-error')) {
