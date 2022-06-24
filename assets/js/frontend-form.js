@@ -504,52 +504,49 @@
         },
 
         validateForm: function( self ) {
-
-            var temp,
-                temp_val    = '',
-                error       = false,
-                error_type  = '',
-                rich_texts = [];
+            var rich_texts = [];
+            var errors = [];
 
             // remove all initial errors if any
-            WP_User_Frontend.removeErrors(self);
-            WP_User_Frontend.removeErrorNotice(self);
+            WP_User_Frontend.removeErrors( self );
+            WP_User_Frontend.removeErrorNotice( self );
 
-            var visibleFields = self.find('input:visible, textarea:visible, select:visible, .wpuf-rich-validation');
+            var visibleFields = self.find( 'input:visible, textarea:visible, select:visible, select.wpuf-ratings, .wpuf-rich-validation, div.wpuf-attachment-upload-filelist' );
 
             visibleFields.each( function( i, item ) {
-                var input_type = $(item).attr('type');
-                var data_type = $(item).data('type');
-                var required = $(item).data('required');
                 var val = '';
+                var container = '';
+                var inputType = $( item ).attr( 'type' );
+                var dataType = $( item ).data( 'type' );
+                var required = $( item ).data( 'required' );
 
-                switch(data_type) {
+                switch( dataType ) {
                     case 'rich':
-                        var name = $(item).data('id')
-                        // val = $.trim( tinyMCE.get(name).getContent() );
-                        var item      = $(item);
-                        var editor_id = item.data('id');
-                        var item_name = item.data('name');
-                        val           = $.trim( tinyMCE.get(editor_id).getContent() );
+                        container = $( item );
+                        var name = $( item ).data( 'id' );
+                        var editor_id = container.data( 'id' );
+                        var item_name = container.data( 'name' );
+                        val = $.trim( tinyMCE.get( editor_id ).getContent() );
 
                         if ( required === 'yes' && val === '' ) {
-                            error = true;
-                            error_type = 'required';
-                            WP_User_Frontend.markError(item);
+                            errors.push({
+                                error_type: 'required',
+                                container: container
+                            });
                         }
 
-                        rich_texts.push(item_name + '=' + encodeURIComponent( val ) );
+                        rich_texts.push( item_name + '=' + encodeURIComponent( val ) );
 
                         break;
                     case 'textarea':
                     case 'text':
-                        val = $.trim( $(item).val() );
+                        val = $.trim( $( item ).val() );
 
                         if ( required === 'yes' && val === '' ) {
-                            error = true;
-                            error_type = 'required';
-
-                            WP_User_Frontend.markError( item, error_type );
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
 
                             break;
                         }
@@ -558,30 +555,48 @@
                             // Get intlTelInput instance
                             var iti = window.intlTelInputGlobals.getInstance( item );
                             if ( '' !== iti.getNumber() && ! iti.isValidNumber() ) {
-                                error = true;
-                                error_type = 'validation';
-                                WP_User_Frontend.markError( item, error_type );
+                                errors.push({
+                                    error_type: 'validation',
+                                    container: item
+                                });
 
                                 break;
                             }
 
                             var name = $(item).attr('name');
                             var value = iti.getNumber();
-                            $('<input>').attr('type', 'hidden').attr('name', name).attr('value', value).appendTo(self);     // append the mobile number with country code
+
+                            // append the mobile number with country code
+                            $( '<input>' )
+                                .attr( 'type', 'hidden' )
+                                .attr( 'name', name )
+                                .attr( 'value', value )
+                                .appendTo( self );
 
                             break;
                         }
 
-                        if ( input_type === 'url' && val !== '' && ! WP_User_Frontend.isValidURL( val ) ) {
-                            error = true;
-                            error_type = 'validation';
-                            WP_User_Frontend.markError( item,  error_type );
+                        break;
+                    case 'url':
+                        val = $.trim( $( item ).val() );
+
+                        if ( required === 'yes' && val === '' ) {
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
 
                             break;
                         }
 
-                        // check for content restriction
-                        error = WP_User_Frontend.editorLimit.checkRestrictionError(item);
+                        if ( val !== '' && ! WP_User_Frontend.isValidURL( val ) ) {
+                            errors.push({
+                                error_type: 'validation',
+                                container: item
+                            });
+
+                            break;
+                        }
                         break;
                     case 'password':
                     case 'confirm_password':
@@ -590,107 +605,193 @@
                         val = $.trim( $(item).val() );
 
                         if ( required === 'yes' && val === '' ) {
-                            error = true;
-                            error_type = 'required';
-                            WP_User_Frontend.markError( item, error_type );
+                            // error = true;
+                            // error_type = 'required';
+                            // WP_User_Frontend.markError( item, error_type );
+
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
 
                             break;
                         }
 
                         if ( hasRepeat ) {
-                            var repeatItem = $('[data-type="confirm_password"]').eq(0);;
+                            var repeatItem = $('[data-type="confirm_password"]').eq(0);
 
-                            if ( repeatItem.val() != val ) {
-                                error = true;
-                                error_type = 'mismatch';
+                            if ( repeatItem.val() !== val ) {
+                                // error = true;
+                                // error_type = 'mismatch';
+                                //
+                                // WP_User_Frontend.markError( repeatItem, error_type );
 
-                                WP_User_Frontend.markError( repeatItem, error_type );
+                                errors.push({
+                                    error_type: 'mismatch',
+                                    container: item
+                                });
                             }
                         }
                         break;
                     case 'select':
                         val = $(item).val();
 
-                        if ( required === 'yes' && val == '-1' ) {
-                            error = true;
-                            error_type = 'required';
+                        if ( required === 'yes' && val === '-1' ) {
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
+                        }
 
-                            WP_User_Frontend.markError( item, error_type );
+                        if ($(item).hasClass('wpuf-ratings')) {
+                            container = $(item).parents('.wpuf-fields');
+                            length = $(container).find('input:checked').length;
+
+                            if ( required === 'yes' && ! length ) {
+                                // error = true;
+                                // error_type = 'required';
+                                // WP_User_Frontend.markError( container,  error_type );
+
+                                errors.push({
+                                    error_type: 'required',
+                                    container: item
+                                });
+                            }
                         }
                         break;
                     case 'multiselect':
                         val = $(item).val();
 
                         if ( required === 'yes' && val.length === 0 ) {
-                            error = true;
-                            error_type = 'required';
-                            WP_User_Frontend.markError( item,  error_type );
+                            // error = true;
+                            // error_type = 'required';
+                            // WP_User_Frontend.markError( item,  error_type );
+
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
                         }
                         break;
                     case 'tax-checkbox':
                         var length = $(item).children().find('input:checked').length;
 
                         if ( required === 'yes' && ! length ) {
-                            error = true;
-                            error_type = 'required';
-                            WP_User_Frontend.markError( item,  error_type );
+                            // error = true;
+                            // error_type = 'required';
+                            // WP_User_Frontend.markError( item,  error_type );
+
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
                         }
                         break;
                     case 'radio':
-                        var length = $(item).find('input:checked').length;
+                    case 'checkbox':
+                        container = $(item).parents('.wpuf-fields');
+                        length = $(container).find('input:checked').length;
 
                         if ( required === 'yes' && ! length ) {
-                            error = true;
-                            error_type = 'required';
-                            WP_User_Frontend.markError( item,  error_type );
+                            // error = true;
+                            // error_type = 'required';
+                            // WP_User_Frontend.markError( container,  error_type );
+
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
                         }
+
+                        // var container = $(item).parents('.wpuf-fields');
+                        //
+                        // required = $(container).data('required');
+                        // length = $(container).find('input:checked').length;
+                        //
+                        // if ( required === 'yes' && ! length ) {
+                        //     // error = true;
+                        //     // error_type = 'required';
+                        //     // WP_User_Frontend.markError( container,  error_type );
+                        //
+                        //     errors.push({
+                        //         error_type: 'validation',
+                        //         container: item
+                        //     });
+                        // }
+
                         break;
                     case 'file':
                         var length = $(item).find('ul').children().length;
 
                         if ( required === 'yes' && ! length ) {
-                            error = true;
-                            error_type = 'required';
+                            // error = true;
+                            // error_type = 'required';
+                            //
+                            // WP_User_Frontend.markError( item,  error_type );
 
-                            // make it warn collor
-                            WP_User_Frontend.markError( item,  error_type );
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
                         }
                         break;
                     case 'email':
                         val = $(item).val();
 
                         if ( required === 'yes' && val === '' ) {
-                            error = true;
-                            error_type = 'required';
-                            WP_User_Frontend.markError( item,  error_type );
+                            // error = true;
+                            // error_type = 'required';
+                            // WP_User_Frontend.markError( item,  error_type );
+
+                            errors.push({
+                                error_type: 'required',
+                                container: item
+                            });
 
                             break;
                         }
 
                         if ( val !== '' && ! WP_User_Frontend.isValidEmail( val ) ) {
-                            error = true;
-                            error_type = 'validation';
-                            WP_User_Frontend.markError( item,  error_type );
+                            // error = true;
+                            // error_type = 'validation';
+                            // WP_User_Frontend.markError( item,  error_type );
+
+                            errors.push({
+                                error_type: 'validation',
+                                container: item
+                            });
                         }
                         break;
                     case 'url':
                         var val = $(item).val();
 
                         if ( required === 'yes' && val === '' ) {
-                            error = true;
-                            error_type = 'required';
-                            WP_User_Frontend.markError( item,  error_type );
+                            // error = true;
+                            // error_type = 'required';
+                            // WP_User_Frontend.markError( item,  error_type );
+
+                            errors.push({
+                                error_type: 'validation',
+                                container: item
+                            });
 
                             break;
                         }
 
                         if ( val !== '' && ! WP_User_Frontend.isValidURL( val ) ) {
-                            error = true;
-                            error_type = 'validation';
-                            WP_User_Frontend.markError( item,  error_type );
+                            // error = true;
+                            // error_type = 'validation';
+                            // WP_User_Frontend.markError( item,  error_type );
+
+                            errors.push({
+                                error_type: 'validation',
+                                container: item
+                            });
                         }
                         break;
                     default:    // radio fields, Google map etc.
+                        const field_type = $(item).attr('type');
+
                         // if this is a Google map
                         if ( $(item).attr('id') && $(item).attr('id').startsWith('wpuf-map') ) {
                             var mapContainer = $(item).parents('.wpuf-form-google-map-container');
@@ -698,59 +799,53 @@
                             required = $(map_field).data('required');
                             val = $(map_field).val(); // needs to grab from parent to get all the data
 
-                            if ( required == 'yes' && val == '' ) {
-                                error = true;
-                                error_type = 'required';
-                                WP_User_Frontend.markError( mapContainer,  error_type );
+                            if ( required === 'yes' && val === '' ) {
+                                // error = true;
+                                // error_type = 'required';
+                                // WP_User_Frontend.markError( mapContainer,  error_type );
+
+                                errors.push({
+                                    error_type: 'required',
+                                    container: mapContainer
+                                });
                             }
                         }
-                        break;
 
                 }
 
-                // if error found, bail out
-                if ( error ) {
-                    WP_User_Frontend.markError(item, error_type);
-                    // WP_User_Frontend.addErrorNotice(self,'end');
-
-                    return false;
-                }
             });
 
-            // Fields that are conditionally hidden
-            var conditionallyHiddenFields = self.find('li.wpuf-el[style*="display: none"] input');
-
-            conditionallyHiddenFields.each( function( i, item ) {
-                var input_type = $(item).attr('type');
-
-                switch ( input_type ) {
-                    case 'url':
-                    case 'email':
-                        // removing conditionally hidden fields value
-                        // so that default HTML validation don't restrict those fields
-                        $(item).val('');
+            if ( errors.length ) {
+                for (var err of errors) {
+                    WP_User_Frontend.markError( err.container, err.error_type );
                 }
-            });
 
-            if ( error ) {
-                WP_User_Frontend.addErrorNotice(self,'end');
+                WP_User_Frontend.addErrorNotice( self,'end' );
+                $( errors[0].container ).focus();
 
                 return false;
             }
 
-            /*// if already some error found, bail out
-            if (error) {
-                // add error notice
-                WP_User_Frontend.addErrorNotice(self,'end');
+            // Fields that are conditionally hidden
+            var conditionallyHiddenFields = self.find( 'li.wpuf-el[style*="display: none"] input' );
 
-                return false;
-            }*/
+            conditionallyHiddenFields.each( function( i, item ) {
+                var inputType = $( item ).attr( 'type' );
 
-            var form_data = self.serialize();
+                switch ( inputType ) {
+                    case 'url':
+                    case 'email':
+                        // removing conditionally hidden fields value
+                        // so that default HTML validation don't restrict those fields
+                        $( item ).val( '' );
+                }
+            });
+
+            var formData = self.serialize();
 
             // append them to the form var
-            form_data = form_data + '&' + rich_texts.join('&');
-            return form_data;
+            formData = formData + '&' + richTexts.join( '&' );
+            return formData;
         },
 
         /**
@@ -791,23 +886,23 @@
                         break;
                     case 'validation' :
                         error_string = error_string + ' ' + error_str_obj[error_type];
-                        break
+                        break;
                     case 'limit':
                         error_string = '';
-                        break
+                        break;
                 }
                 $(item).siblings('.wpuf-error-msg').remove();
 
                 // if input type is radio, append the error message for design issue
                 if ( $(item).prev().prop('nodeName') === 'DIV' && ! $(item).hasClass('wpuf_telephone') ) {
-                    $(item).append('<div class="wpuf-error-msg">'+ error_string +'</div>')
+                    $(item).append('<div class="wpuf-error-msg">'+ error_string +'</div>');
                 } else {
                     // if input type is not radio, add the div after current item
-                    $(item).after('<div class="wpuf-error-msg">'+ error_string +'</div>')
+                    $(item).after('<div class="wpuf-error-msg">'+ error_string +'</div>');
                 }
             }
 
-            $(item).focus();
+            // $(item).focus();
         },
 
         removeErrors: function(item) {
@@ -1018,8 +1113,8 @@
                 }
             },
 
-            checkRestrictionError: function(field) {
-                var fieldId = $(field).attr('id');
+            checkRestrictionError: function( field ) {
+                var fieldId = $(field).attr( 'id' );
                 var isTinymce = false;
                 var ed = null;
                 var numWords = 0;
