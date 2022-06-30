@@ -511,7 +511,7 @@
             WP_User_Frontend.removeErrors( self );
             WP_User_Frontend.removeErrorNotice( self );
 
-            var visibleFields = self.find( 'input:visible, textarea:visible, select:visible, div.br-widget, .wpuf-rich-validation, div.wpuf-attachment-upload-filelist' );
+            var visibleFields = self.find( 'input:visible, textarea:visible, select:visible, div.br-widget:visible, .wpuf-rich-validation:visible, div.wpuf-attachment-upload-filelist:visible' );
 
             visibleFields.each( function( i, item ) {
                 var container = '';
@@ -1042,12 +1042,14 @@
                 var fieldType = (typeof(data[2]) !== "undefined" && data[2] !== null) ? (data[2]).trim() : '';
                 var limit_type = (typeof(data[3]) !== "undefined" && data[3] !== null) ? (data[3]).trim() : '';
                 var limit_to = (typeof(data[4]) !== "undefined" && data[4] !== null) ? (data[4]).trim() : '';
-                var limit_label = ( 'word' === limit_type ) ? 'Word Limit : ' : 'Character Limit : ';
+                var limit_label = '';
 
                 if ( 'word' === limit_type ) {
                     numWords = WP_User_Frontend.editorLimit.tinymce.getStats(ed).words;
+                    limit_label = 'word_' + limit_to;
                 } else {
                     numWords = WP_User_Frontend.editorLimit.tinymce.getStats(ed).chars;
+                    limit_label = 'char_' + limit_to;
                 }
 
                 var errorMessage = wpuf_frontend['word_'+limit_to ] + ' ' + limit;
@@ -1059,12 +1061,12 @@
 
                 if ( (numWords > limit) && ('max' === limit_to) ) {
                     WP_User_Frontend.markError( field, 'limit' );
-                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords +'/'+ limit );
+                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend[ limit_label ] + ' ' + numWords +'/'+ limit );
 
                     return true;
                 } else if ( (numWords < limit) && ('min' === limit_to) ) {
                     WP_User_Frontend.markError( field, 'limit' );
-                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords +'/'+ limit );
+                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend[ limit_label ] + ' ' + numWords +'/'+ limit );
 
                     return true;
                 }
@@ -1104,20 +1106,12 @@
                 }
 
                 var limit = (typeof(data[0]) !== "undefined" && data[0] !== null) ? parseInt(data[0]) : 0;
-                var fieldId = (typeof(data[1]) !== "undefined" && data[1] !== null) ? (data[1]).trim() : '';
-                var fieldType = (typeof(data[2]) !== "undefined" && data[2] !== null) ? (data[2]).trim() : '';
                 var limit_type = (typeof(data[3]) !== "undefined" && data[3] !== null) ? (data[3]).trim() : '';
                 var limit_to = (typeof(data[4]) !== "undefined" && data[4] !== null) ? (data[4]).trim() : '';
                 var limit_label = ( 'word' === limit_type ) ? 'Word Limit : ' : 'Character Limit : ';
 
                 numChars = $(field).val().trim().length;
                 numWords = $(field).val().trim().split(' ').length;
-
-                console.log($(field).val().split(' '));
-
-                console.log(limit, limit_type, limit_to, limit_label, numWords);
-
-                var errorMessage = wpuf_frontend['word_'+limit_to ] + ' ' + limit;
 
                 // if blank field, no need to check for content restriction
                 if ( numChars ===  0 ) {
@@ -1147,7 +1141,7 @@
                 }
 
                 return false;
-                
+
             },
 
             tinymce: {
@@ -1157,7 +1151,7 @@
 
                     return {
                         chars: text.length,
-                        words: text.split(/[\w\u2019\'-]+/).length
+                        words: text.split(/[\w\u2019\'-]+/).length - 1  // -1 to remove counting of blank or empty string
                     };
                 },
 
@@ -1170,19 +1164,23 @@
                     }
 
                     var numWords    = WP_User_Frontend.editorLimit.tinymce.getStats(ed).chars + 1,
-                        limit_label = ( 'word' === limit_type ) ? 'Word Limit : ' : 'Character Limit : ';
+                        limit_label = '';
 
                     if ( 'word' === limit_type ) {
                         numWords = WP_User_Frontend.editorLimit.tinymce.getStats(ed).words;
+                        limit_label = 'word_' + limit_to;
+                    } else {
+                        numWords = WP_User_Frontend.editorLimit.tinymce.getStats(ed).chars;
+                        limit_label = 'char_' + limit_to;
                     }
 
                     if ( limit && numWords > limit && 'max' === limit_to ) {
                         WP_User_Frontend.editorLimit.blockTyping(event);
                         WP_User_Frontend.markError( field, 'limit' );
-                        jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords + '/' + limit );
+                        jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend[ limit_label ] + ' ' + numWords + '/' + limit );
                     } else if ( limit && numWords < limit && 'min' === limit_to ) {
                         WP_User_Frontend.markError( field, 'limit' );
-                        jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords + '/' + limit );
+                        jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend[ limit_label ] + ' ' + numWords + '/' + limit );
                     } else {
                         jQuery('.mce-path-item.mce-last', ed.container).html('');
                     }
@@ -1212,6 +1210,7 @@
                 if ( 'word' === limit_type ) {
                     content_length = self.val().split(' ').length;
                 }
+
                 if ( limit && content_length > limit && 'max' === limit_to ) {
                     WP_User_Frontend.content_limit_message( self, limit_type, limit_to, limit );
                     WP_User_Frontend.editorLimit.blockTyping(event);
