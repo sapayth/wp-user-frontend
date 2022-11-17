@@ -129,7 +129,7 @@
 
             if ( typeof wp.passwordStrength != 'undefined' ) {
 
-                strength = wp.passwordStrength.meter( pass1, wp.passwordStrength.userInputBlacklist(), pass1 );
+                strength = wp.passwordStrength.meter( pass1, wp.passwordStrength.userInputDisallowedList(), pass1 );
 
                 switch ( strength ) {
                     case 2:
@@ -620,6 +620,8 @@
                     case 'password':
                     case 'confirm_password':
                         var hasRepeat = $(item).data('repeat');
+                        var strength = $(item).data('strength');
+                        var min_length = $(item).data('minimum-length');
 
                         val = $.trim( $(item).val() );
 
@@ -641,6 +643,34 @@
                                     container: item
                                 });
                             }
+                        }
+
+                        if ( strength ) {
+                            var strengthMeter = wp.passwordStrength.meter(val, wp.passwordStrength.userInputDisallowedList());
+
+                            if (strength === 'weak' && strengthMeter < 2) {
+                                errors.push({
+                                    error_type: 'custom',
+                                    container: item,
+                                    error_message: 'Password minimum strength should be weak';
+                                });
+                            } else if (strength === 'medium' && strengthMeter < 3) {
+                                errors.push({
+                                    error_type: 'custom',
+                                    container: item,
+                                    error_message: 'Password minimum strength should be medium';
+                                });
+                            } else if (strength === 'strong' && strengthMeter < 4) {
+                                errors.push({
+                                    error_type: 'custom',
+                                    container: item,
+                                    error_message: 'Password strength should be strong';
+                                });
+                            }
+                        }
+
+                        if ( error ) {
+                            WP_User_Frontend.markError( item, error_type, error_message );
                         }
                         break;
                     case 'select':
@@ -861,6 +891,8 @@
                 $( item ).closest( 'div.wpuf-fields' ).find( 'div.wpuf-error-msg' ).remove();
                 $( item ).closest( 'div.wpuf-fields' ).append( '<div class="wpuf-error-msg">' + error_string + '</div>' );
             }
+
+            $(item).focus();
         },
 
         removeErrors: function(item) {
@@ -1054,41 +1086,35 @@
 
                 var errorMessage = wpuf_frontend['word_'+limit_to ] + ' ' + limit;
 
-                // if blank field, no need to check for content restriction
-                if ( numWords ===  0 ) {
+                if ( (numWords > 1) && (numWords > limit) && ('max' === limit_to) ) {
+                    WP_User_Frontend.markError( field, 'limit' );
+                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords +'/'+ limit );
+
+                    return true;
+                } else if ( (numWords < limit) && ('min' === limit_to) && numWords > 1 ) {
+                    WP_User_Frontend.markError( field, 'limit' );
+                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend['word_'+limit_to ] + ' ' + numWords +'/'+ limit );
+
+                    return true;
+                } else {
+                    if ($(field).hasClass('has-error')) {
+                        $(field).removeClass('has-error');
+                    }
+
                     return false;
-                }
-
-                if ( (numWords > limit) && ('max' === limit_to) ) {
-                    WP_User_Frontend.markError( field, 'limit' );
-                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend[ limit_label ] + ' ' + numWords +'/'+ limit );
-
-                    return true;
-                } else if ( (numWords < limit) && ('min' === limit_to) ) {
-                    WP_User_Frontend.markError( field, 'limit' );
-                    jQuery('.mce-path-item.mce-last', ed.container).html( wpuf_frontend[ limit_label ] + ' ' + numWords +'/'+ limit );
-
-                    return true;
                 }
             },
 
-            isRestrictionFailed: function( field ) {
-                var fieldId = $( field ).data( 'id' );
-                var fieldType = $( field ).data( 'type' );
+            checkRestrictionError: function(field) {
+                var fieldId = $(field).attr('id');
                 var isTinymce = false;
                 var ed = null;
-                var numChars = 0;
                 var numWords = 0;
                 var data = '';
 
-                // clear previous style
-                if ( $( field ).closest( 'div.wpuf-fields' ).hasClass( 'has-error' ) ) {
-                    $( field ).closest( 'div.wpuf-fields' ).removeClass( 'has-error' )
-                }
-
                 if ( typeof tinyMCE !== 'undefined' && tinyMCE.get(fieldId) !== null ) {
                     isTinymce = true;
-                    ed = tinyMCE.get( fieldId );
+                    ed = tinyMCE.get(fieldId);
 
                     ed.focus();
                 }
