@@ -527,7 +527,7 @@
 
                         if ( required === 'yes' && val === '' ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
                         }
@@ -536,7 +536,7 @@
 
                         if ( isRestrictionFailed ) {
                             errors.push({
-                                error_type: 'limit',
+                                type: 'limit',
                                 container: item
                             });
 
@@ -552,18 +552,18 @@
 
                         if ( required === 'yes' && val === '' ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
 
                             break;
                         }
 
-                        var isRestrictionFailed = WP_User_Frontend.editorLimit.isRestrictionFailed( item );
+                        var isRestrictionFailed = WP_User_Frontend.editorLimit.checkRestrictionError( item )
 
                         if ( isRestrictionFailed ) {
                             errors.push({
-                                error_type: 'limit',
+                                type: 'limit',
                                 container: item
                             });
 
@@ -575,7 +575,7 @@
                             var iti = window.intlTelInputGlobals.getInstance( item );
                             if ( '' !== iti.getNumber() && ! iti.isValidNumber() ) {
                                 errors.push({
-                                    error_type: 'validation',
+                                    type: 'validation',
                                     container: item
                                 });
 
@@ -601,7 +601,7 @@
 
                         if ( required === 'yes' && val === '' ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
 
@@ -610,7 +610,7 @@
 
                         if ( val !== '' && ! WP_User_Frontend.isValidURL( val ) ) {
                             errors.push({
-                                error_type: 'validation',
+                                type: 'validation',
                                 container: item
                             });
 
@@ -621,13 +621,12 @@
                     case 'confirm_password':
                         var hasRepeat = $(item).data('repeat');
                         var strength = $(item).data('strength');
-                        var min_length = $(item).data('minimum-length');
 
                         val = $.trim( $(item).val() );
 
                         if ( required === 'yes' && val === '' ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
 
@@ -639,7 +638,7 @@
 
                             if ( repeatItem.val() !== val ) {
                                 errors.push({
-                                    error_type: 'mismatch',
+                                    type: 'mismatch',
                                     container: item
                                 });
                             }
@@ -650,35 +649,32 @@
 
                             if (strength === 'weak' && strengthMeter < 2) {
                                 errors.push({
-                                    error_type: 'custom',
+                                    type: 'custom',
                                     container: item,
-                                    error_message: 'Password minimum strength should be weak';
+                                    message: 'Password minimum strength should be weak'
                                 });
                             } else if (strength === 'medium' && strengthMeter < 3) {
                                 errors.push({
-                                    error_type: 'custom',
+                                    type: 'custom',
                                     container: item,
-                                    error_message: 'Password minimum strength should be medium';
+                                    message: 'Password minimum strength should be medium'
                                 });
                             } else if (strength === 'strong' && strengthMeter < 4) {
                                 errors.push({
-                                    error_type: 'custom',
+                                    type: 'custom',
                                     container: item,
-                                    error_message: 'Password strength should be strong';
+                                    message: 'Password strength should be strong'
                                 });
                             }
                         }
 
-                        if ( error ) {
-                            WP_User_Frontend.markError( item, error_type, error_message );
-                        }
                         break;
                     case 'select':
                         val = $(item).val();
 
                         if ( required === 'yes' && val === '-1' ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
                         }
@@ -688,7 +684,7 @@
 
                         if ( required === 'yes' && val.length === 0 ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
                         }
@@ -698,7 +694,7 @@
 
                         if ( required === 'yes' && ! length ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
                         }
@@ -710,7 +706,7 @@
 
                         if ( required === 'yes' && ! length ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
                         }
@@ -721,7 +717,7 @@
 
                         if ( required === 'yes' && ! length ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
                         }
@@ -731,7 +727,7 @@
 
                         if ( required === 'yes' && val === '' ) {
                             errors.push({
-                                error_type: 'required',
+                                type: 'required',
                                 container: item
                             });
 
@@ -740,7 +736,7 @@
 
                         if ( val !== '' && ! WP_User_Frontend.isValidEmail( val ) ) {
                             errors.push({
-                                error_type: 'validation',
+                                type: 'validation',
                                 container: item
                             });
                         }
@@ -750,7 +746,7 @@
 
                         if ( required === 'yes' && val === '' ) {
                             errors.push({
-                                error_type: 'validation',
+                                type: 'validation',
                                 container: item
                             });
 
@@ -759,7 +755,7 @@
 
                         if ( val !== '' && ! WP_User_Frontend.isValidURL( val ) ) {
                             errors.push({
-                                error_type: 'validation',
+                                type: 'validation',
                                 container: item
                             });
                         }
@@ -775,7 +771,7 @@
 
                             if ( required === 'yes' && val === '' ) {
                                 errors.push({
-                                    error_type: 'required',
+                                    type: 'required',
                                     container: mapContainer
                                 });
                             }
@@ -789,7 +785,7 @@
 
                             if ( required === 'yes' && ! length ) {
                                 errors.push({
-                                    error_type: 'required',
+                                    type: 'required',
                                     container: item
                                 });
                             }
@@ -799,8 +795,9 @@
             });
 
             if ( errors.length ) {
-                for (var err of errors) {
-                    WP_User_Frontend.markError( err.container, err.error_type );
+                for (var i = 0; i < errors.length; i++) {
+                    var err = errors[i];
+                    WP_User_Frontend.markError( err.container, err.type, err.message );
                 }
 
                 WP_User_Frontend.addErrorNotice( self,'end' );
@@ -849,7 +846,7 @@
             $(form).find('.wpuf-errors').remove();
         },
 
-        markError: function(item, error_type) {
+        markError: function(item, error_type, error_message) {
             // for address fields
             if ( $( item ).closest(  '.wpuf-fields.wpuf-fields-address' ).length ) {
                 $( item ).closest( 'div.wpuf-sub-fields' ).addClass('has-error');
