@@ -202,10 +202,22 @@ module.exports = function(grunt) {
                 }
             }
         },
+
+        postcss: {
+            options: {
+                processors: [
+                    require('autoprefixer')({}),
+                ]
+            },
+            dist: {
+                src: 'assets/css/testing.css'
+            }
+        }
     });
 
     // Load NPM tasks to be used here
     grunt.loadNpmTasks( 'grunt-contrib-less' );
+    grunt.loadNpmTasks( '@lodder/grunt-postcss' );
     grunt.loadNpmTasks( 'grunt-contrib-concat' );
     grunt.loadNpmTasks( 'grunt-contrib-jshint' );
     grunt.loadNpmTasks( 'grunt-wp-i18n' );
