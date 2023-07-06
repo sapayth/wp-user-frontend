@@ -811,7 +811,16 @@ class WPUF_Frontend_Render_Form {
                     if ( is_array( $value_name ) && ! empty( $value_name ) ) {
                         $meta_key_value[ $value['name'] ] = implode( self::$separator, $value_name );
                     } else {
-                        $meta_key_value[ $value['name'] ] = $value_name[0];
+                        $meta_key_value[ $value['name'] ] = is_array( $value_name ) ? $value_name[0] : $value_name;
+                    }
+                    break;
+
+                case 'radio':
+                    if ( '_downloadable' === $value['name'] ) {
+                        if ( function_exists( 'wc_bool_to_string' ) ) {
+                            $value_name = 'on' === $value_name ? 'yes' : $value_name;
+                            $meta_key_value[ $value['name'] ] = wc_bool_to_string( trim( $value_name ) );
+                        }
                     }
                     break;
 
@@ -829,13 +838,12 @@ class WPUF_Frontend_Render_Form {
                         }
                     } elseif ( ! empty( $value_name ) ) {
                         $meta_key_value[ $value['name'] ] = trim( $value_name );
-                    } else {
-                        $meta_key_value[ $value['name'] ] = trim( $value_name );
                     }
 
                     break;
             }
         } //end foreach
+
         return [ $meta_key_value, $multi_repeated, $files ];
     }
 
