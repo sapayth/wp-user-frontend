@@ -210,7 +210,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks( 'grunt-contrib-concat' );
     grunt.loadNpmTasks( 'grunt-contrib-jshint' );
     grunt.loadNpmTasks( 'grunt-wp-i18n' );
-    grunt.loadNpmTasks( 'grunt-contrib-uglify' );
+    grunt.loadNpmTasks( 'grunt-contrib-uglify-es' );
     grunt.loadNpmTasks( 'grunt-contrib-watch' );
     grunt.loadNpmTasks( 'grunt-contrib-clean' );
     grunt.loadNpmTasks( 'grunt-contrib-copy' );
@@ -218,7 +218,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks( 'grunt-notify' );
     grunt.loadNpmTasks( 'grunt-wp-readme-to-markdown' );
 
-    grunt.registerTask( 'default', [ 'less', 'concat' ] );
+    grunt.registerTask( 'default', [ 'less', 'concat', 'uglify' ] );
 
     // file auto generation
     grunt.registerTask( 'i18n', [ 'makepot' ] );
@@ -226,5 +226,5 @@ module.exports = function(grunt) {
 
     // build stuff
     grunt.registerTask( 'release', [ 'less', 'concat', 'uglify', 'i18n', 'readme' ] );
-    grunt.registerTask( 'zip', [ 'clean', 'copy', 'compress' ] );
+    grunt.registerTask( 'zip', [ 'release', 'clean', 'copy', 'compress' ] );
 };
